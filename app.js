@@ -248,25 +248,27 @@ app.post('/users/', (req, res) => {
 app.post('/users/login', (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
-  User.findByCredentials(email, password).then((user) => {
-    return user
-      .createSession()
-      .then((refreshToken) => {
-        return user.generateAccessAuthToken().then((accessToken) => {
-          return { accessToken, refreshToken };
+  User.findByCredentials(email, password)
+    .then((user) => {
+      return user
+        .createSession()
+        .then((refreshToken) => {
+          return user.generateAccessAuthToken().then((accessToken) => {
+            return { accessToken, refreshToken };
+          });
+        })
+        .then((authTokens) => {
+          res
+            .header('x-refresh-token', authTokens.refreshToken)
+            .header('x-access-token', authTokens.accessToken)
+            .status(200)
+            .send(user);
+        })
+        .catch((e) => {
+          res.status(400).send(e);
         });
-      })
-      .then((authTokens) => {
-        res
-          .header('x-refresh-token', authTokens.refreshToken)
-          .header('x-access-token', authTokens.accessToken)
-          .status(200)
-          .send(user);
-      })
-      .catch((e) => {
-        res.status(400).send(e);
-      });
-  });
+    })
+    .catch((e) => console.log(e));
 });
 app.get('/users/me/access-token', verifySession, (req, res) => {
   req.userObject
